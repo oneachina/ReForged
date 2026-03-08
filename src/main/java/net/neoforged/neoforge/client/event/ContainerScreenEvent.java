@@ -2,10 +2,10 @@ package net.neoforged.neoforge.client.event;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 
 /**
- * Stub: Fired for hooking into AbstractContainerScreen events.
+ * NeoForge ContainerScreenEvent hierarchy with Forge wrapper constructors.
  */
 public abstract class ContainerScreenEvent extends Event {
     private final AbstractContainerScreen<?> containerScreen;
@@ -33,11 +33,23 @@ public abstract class ContainerScreenEvent extends Event {
         public int getMouseY() { return mouseY; }
 
         public static class Foreground extends Render {
-            public Foreground(AbstractContainerScreen<?> c, GuiGraphics g, int mx, int my) { super(c, g, mx, my); }
+            public Foreground(AbstractContainerScreen<?> c, GuiGraphics g, int mx, int my) {
+                super(c, g, mx, my);
+            }
+            /** Wrapper constructor */
+            public Foreground(net.minecraftforge.client.event.ContainerScreenEvent.Render.Foreground forge) {
+                super(forge.getContainerScreen(), forge.getGuiGraphics(), forge.getMouseX(), forge.getMouseY());
+            }
         }
 
         public static class Background extends Render {
-            public Background(AbstractContainerScreen<?> c, GuiGraphics g, int mx, int my) { super(c, g, mx, my); }
+            public Background(AbstractContainerScreen<?> c, GuiGraphics g, int mx, int my) {
+                super(c, g, mx, my);
+            }
+            /** Wrapper constructor */
+            public Background(net.minecraftforge.client.event.ContainerScreenEvent.Render.Background forge) {
+                super(forge.getContainerScreen(), forge.getGuiGraphics(), forge.getMouseX(), forge.getMouseY());
+            }
         }
     }
 }

@@ -1,30 +1,31 @@
 package net.neoforged.neoforge.event.tick;
 
 import net.minecraft.world.entity.Entity;
+import net.neoforged.bus.api.Event;
 
 /**
- * Wrapper around Forge's {@link net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent}.
- * NeoForge has EntityTickEvent (all entities); Forge only has LivingTickEvent.
+ * NeoForge EntityTickEvent — wraps Forge's LivingTickEvent.
+ * NeoForge fires for all entities; Forge only for LivingEntity.
  */
-public class EntityTickEvent {
-    private final net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent delegate;
+public class EntityTickEvent extends Event {
+    private final Entity entity;
 
-    public EntityTickEvent(net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent delegate) {
-        this.delegate = delegate;
+    protected EntityTickEvent(Entity entity) {
+        this.entity = entity;
     }
 
-    public Entity getEntity() { return delegate.getEntity(); }
+    public Entity getEntity() { return entity; }
 
-    /** Pre fires at same time as Forge's LivingTickEvent. */
     public static class Pre extends EntityTickEvent {
-        public Pre(net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent delegate) {
-            super(delegate);
+        public Pre(Entity entity) { super(entity); }
+
+        /** Wrapper constructor */
+        public Pre(net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent forge) {
+            super(forge.getEntity());
         }
     }
 
     public static class Post extends EntityTickEvent {
-        public Post(net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent delegate) {
-            super(delegate);
-        }
+        public Post(Entity entity) { super(entity); }
     }
 }

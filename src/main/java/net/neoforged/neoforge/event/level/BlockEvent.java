@@ -1,13 +1,95 @@
 package net.neoforged.neoforge.event.level;
 
-public class BlockEvent extends net.neoforged.bus.api.Event {
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.bus.api.Event;
+import net.neoforged.bus.api.ICancellableEvent;
 
-    public static class BreakEvent extends BlockEvent {
+/**
+ * NeoForge BlockEvent with fields and Forge wrapper constructors.
+ */
+public class BlockEvent extends Event {
+    private final LevelAccessor level;
+    private final BlockPos pos;
+    private final BlockState state;
+
+    public BlockEvent(LevelAccessor level, BlockPos pos, BlockState state) {
+        this.level = level;
+        this.pos = pos;
+        this.state = state;
     }
 
-    public static class EntityMultiPlaceEvent extends BlockEvent {
+    /** Wrapper constructor */
+    public BlockEvent(net.minecraftforge.event.level.BlockEvent forge) {
+        this.level = forge.getLevel();
+        this.pos = forge.getPos();
+        this.state = forge.getState();
     }
 
-    public static class EntityPlaceEvent extends BlockEvent {
+    public LevelAccessor getLevel() { return level; }
+    public BlockPos getPos() { return pos; }
+    public BlockState getState() { return state; }
+
+    public static class BreakEvent extends BlockEvent implements ICancellableEvent {
+        private final Player player;
+        private int exp;
+
+        public BreakEvent(LevelAccessor level, BlockPos pos, BlockState state, Player player) {
+            super(level, pos, state);
+            this.player = player;
+            this.exp = 0;
+        }
+
+        /** Wrapper constructor */
+        public BreakEvent(net.minecraftforge.event.level.BlockEvent.BreakEvent forge) {
+            super(forge);
+            this.player = forge.getPlayer();
+            this.exp = forge.getExpToDrop();
+        }
+
+        public Player getPlayer() { return player; }
+        public int getExpToDrop() { return exp; }
+        public void setExpToDrop(int exp) { this.exp = exp; }
+    }
+
+    public static class EntityPlaceEvent extends BlockEvent implements ICancellableEvent {
+        private final Entity entity;
+        private final BlockState placedBlock;
+        private final BlockState placedAgainst;
+
+        public EntityPlaceEvent(LevelAccessor level, BlockPos pos, BlockState state,
+                                Entity entity, BlockState placedBlock, BlockState placedAgainst) {
+            super(level, pos, state);
+            this.entity = entity;
+            this.placedBlock = placedBlock;
+            this.placedAgainst = placedAgainst;
+        }
+
+        /** Wrapper constructor */
+        public EntityPlaceEvent(net.minecraftforge.event.level.BlockEvent.EntityPlaceEvent forge) {
+            super(forge);
+            this.entity = forge.getEntity();
+            this.placedBlock = forge.getPlacedBlock();
+            this.placedAgainst = forge.getPlacedAgainst();
+        }
+
+        public Entity getEntity() { return entity; }
+        public BlockState getPlacedBlock() { return placedBlock; }
+        public BlockState getPlacedAgainst() { return placedAgainst; }
+    }
+
+    public static class EntityMultiPlaceEvent extends EntityPlaceEvent {
+        public EntityMultiPlaceEvent(LevelAccessor level, BlockPos pos, BlockState state,
+                                     Entity entity, BlockState placedBlock, BlockState placedAgainst) {
+            super(level, pos, state, entity, placedBlock, placedAgainst);
+        }
+
+        /** Wrapper constructor */
+        public EntityMultiPlaceEvent(net.minecraftforge.event.level.BlockEvent.EntityMultiPlaceEvent forge) {
+            super(forge);
+        }
     }
 }

@@ -94,11 +94,25 @@ public class ModContainer {
 
     /**
      * Register an extension point with this mod container.
-     * NeoForge mods use this for config screen factories, display tests, etc.
-     * In our bridge this is a no-op since Forge uses a different mechanism.
+     * Bridges NeoForge's IConfigScreenFactory to Forge's ConfigScreenHandler.
      */
+    @SuppressWarnings("unchecked")
     public <T extends IExtensionPoint> void registerExtensionPoint(Class<T> point, T extension) {
-        // No-op: Forge handles extension points differently
+        if (extension instanceof net.neoforged.neoforge.client.gui.IConfigScreenFactory factory) {
+            try {
+                java.util.function.BiFunction<net.minecraft.client.Minecraft, net.minecraft.client.gui.screens.Screen,
+                        net.minecraft.client.gui.screens.Screen> forgeFactory =
+                        (mc, parent) -> factory.createScreen(ModContainer.this, parent);
+                var configScreen = new net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory(forgeFactory);
+                delegate.registerExtensionPoint(
+                        net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory.class,
+                        () -> configScreen);
+            } catch (Throwable e) {
+                org.slf4j.LoggerFactory.getLogger(ModContainer.class).warn(
+                        "[ReForged] Failed to bridge config screen factory for mod '{}': {}",
+                        getModId(), e.getMessage());
+            }
+        }
     }
 
     /**

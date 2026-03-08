@@ -12,7 +12,14 @@ import net.neoforged.bus.api.ICancellableEvent;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Shim: NeoForge ScreenEvent hierarchy for compatibility.
+ * NeoForge ScreenEvent hierarchy with Forge wrapper constructors for bridging.
+ *
+ * <p>Each inner class provides two constructor variants:</p>
+ * <ol>
+ *   <li>Standard NeoForge constructor (explicit parameters)</li>
+ *   <li>Wrapper constructor taking the Forge equivalent for automatic bridging
+ *       via {@link org.xiyu.reforged.shim.NeoForgeEventBusShim}</li>
+ * </ol>
  */
 public abstract class ScreenEvent extends Event {
     private final Screen screen;
@@ -48,12 +55,22 @@ public abstract class ScreenEvent extends Event {
                        Consumer<GuiEventListener> add, Consumer<GuiEventListener> remove) {
                 super(screen, list, add, remove);
             }
+            /** Wrapper constructor: bridges from Forge ScreenEvent.Init.Pre */
+            public Pre(net.minecraftforge.client.event.ScreenEvent.Init.Pre forge) {
+                super(forge.getScreen(), forge.getListenersList(),
+                      forge::addListener, forge::removeListener);
+            }
         }
 
         public static class Post extends Init {
             public Post(Screen screen, List<GuiEventListener> list,
                         Consumer<GuiEventListener> add, Consumer<GuiEventListener> remove) {
                 super(screen, list, add, remove);
+            }
+            /** Wrapper constructor: bridges from Forge ScreenEvent.Init.Post */
+            public Post(net.minecraftforge.client.event.ScreenEvent.Init.Post forge) {
+                super(forge.getScreen(), forge.getListenersList(),
+                      forge::addListener, forge::removeListener);
             }
         }
     }
@@ -82,11 +99,21 @@ public abstract class ScreenEvent extends Event {
             public Pre(Screen screen, GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
                 super(screen, guiGraphics, mouseX, mouseY, partialTick);
             }
+            /** Wrapper constructor: bridges from Forge ScreenEvent.Render.Pre */
+            public Pre(net.minecraftforge.client.event.ScreenEvent.Render.Pre forge) {
+                super(forge.getScreen(), forge.getGuiGraphics(),
+                      forge.getMouseX(), forge.getMouseY(), forge.getPartialTick());
+            }
         }
 
         public static class Post extends Render {
             public Post(Screen screen, GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
                 super(screen, guiGraphics, mouseX, mouseY, partialTick);
+            }
+            /** Wrapper constructor: bridges from Forge ScreenEvent.Render.Post */
+            public Post(net.minecraftforge.client.event.ScreenEvent.Render.Post forge) {
+                super(forge.getScreen(), forge.getGuiGraphics(),
+                      forge.getMouseX(), forge.getMouseY(), forge.getPartialTick());
             }
         }
     }
@@ -98,6 +125,11 @@ public abstract class ScreenEvent extends Event {
         public BackgroundRendered(Screen screen, GuiGraphics guiGraphics) {
             super(screen);
             this.guiGraphics = guiGraphics;
+        }
+        /** Wrapper constructor */
+        public BackgroundRendered(net.minecraftforge.client.event.ScreenEvent.BackgroundRendered forge) {
+            super(forge.getScreen());
+            this.guiGraphics = forge.getGuiGraphics();
         }
 
         public GuiGraphics getGuiGraphics() { return guiGraphics; }
@@ -114,6 +146,13 @@ public abstract class ScreenEvent extends Event {
             this.availableSpace = availableSpace;
             this.compact = compact;
             this.horizontalOffset = horizontalOffset;
+        }
+        /** Wrapper constructor */
+        public RenderInventoryMobEffects(net.minecraftforge.client.event.ScreenEvent.RenderInventoryMobEffects forge) {
+            super(forge.getScreen());
+            this.availableSpace = forge.getAvailableSpace();
+            this.compact = forge.isCompact();
+            this.horizontalOffset = forge.getHorizontalOffset();
         }
 
         public int getAvailableSpace() { return availableSpace; }
@@ -154,6 +193,10 @@ public abstract class ScreenEvent extends Event {
             public Pre(Screen screen, double mouseX, double mouseY, int button) {
                 super(screen, mouseX, mouseY, button);
             }
+            /** Wrapper constructor */
+            public Pre(net.minecraftforge.client.event.ScreenEvent.MouseButtonPressed.Pre forge) {
+                super(forge.getScreen(), forge.getMouseX(), forge.getMouseY(), forge.getButton());
+            }
         }
 
         public static class Post extends MouseButtonPressed {
@@ -163,6 +206,11 @@ public abstract class ScreenEvent extends Event {
             public Post(Screen screen, double mouseX, double mouseY, int button, boolean handled) {
                 super(screen, mouseX, mouseY, button);
                 this.handled = handled;
+            }
+            /** Wrapper constructor */
+            public Post(net.minecraftforge.client.event.ScreenEvent.MouseButtonPressed.Post forge) {
+                super(forge.getScreen(), forge.getMouseX(), forge.getMouseY(), forge.getButton());
+                this.handled = forge.wasHandled();
             }
 
             public boolean wasClickHandled() { return handled; }
@@ -193,6 +241,10 @@ public abstract class ScreenEvent extends Event {
             public Pre(Screen screen, double mouseX, double mouseY, int button) {
                 super(screen, mouseX, mouseY, button);
             }
+            /** Wrapper constructor */
+            public Pre(net.minecraftforge.client.event.ScreenEvent.MouseButtonReleased.Pre forge) {
+                super(forge.getScreen(), forge.getMouseX(), forge.getMouseY(), forge.getButton());
+            }
         }
 
         public static class Post extends MouseButtonReleased {
@@ -202,6 +254,11 @@ public abstract class ScreenEvent extends Event {
             public Post(Screen screen, double mouseX, double mouseY, int button, boolean handled) {
                 super(screen, mouseX, mouseY, button);
                 this.handled = handled;
+            }
+            /** Wrapper constructor */
+            public Post(net.minecraftforge.client.event.ScreenEvent.MouseButtonReleased.Post forge) {
+                super(forge.getScreen(), forge.getMouseX(), forge.getMouseY(), forge.getButton());
+                this.handled = forge.wasHandled();
             }
 
             public boolean wasReleaseHandled() { return handled; }
@@ -238,11 +295,21 @@ public abstract class ScreenEvent extends Event {
             public Pre(Screen screen, double mouseX, double mouseY, int mouseButton, double dragX, double dragY) {
                 super(screen, mouseX, mouseY, mouseButton, dragX, dragY);
             }
+            /** Wrapper constructor */
+            public Pre(net.minecraftforge.client.event.ScreenEvent.MouseDragged.Pre forge) {
+                super(forge.getScreen(), forge.getMouseX(), forge.getMouseY(),
+                      forge.getMouseButton(), forge.getDragX(), forge.getDragY());
+            }
         }
 
         public static class Post extends MouseDragged {
             public Post(Screen screen, double mouseX, double mouseY, int mouseButton, double dragX, double dragY) {
                 super(screen, mouseX, mouseY, mouseButton, dragX, dragY);
+            }
+            /** Wrapper constructor */
+            public Post(net.minecraftforge.client.event.ScreenEvent.MouseDragged.Post forge) {
+                super(forge.getScreen(), forge.getMouseX(), forge.getMouseY(),
+                      forge.getMouseButton(), forge.getDragX(), forge.getDragY());
             }
         }
     }
@@ -265,11 +332,21 @@ public abstract class ScreenEvent extends Event {
             public Pre(Screen screen, double mouseX, double mouseY, double scrollDeltaX, double scrollDeltaY) {
                 super(screen, mouseX, mouseY, scrollDeltaX, scrollDeltaY);
             }
+            /** Wrapper constructor */
+            public Pre(net.minecraftforge.client.event.ScreenEvent.MouseScrolled.Pre forge) {
+                super(forge.getScreen(), forge.getMouseX(), forge.getMouseY(),
+                      forge.getDeltaX(), forge.getDeltaY());
+            }
         }
 
         public static class Post extends MouseScrolled {
             public Post(Screen screen, double mouseX, double mouseY, double scrollDeltaX, double scrollDeltaY) {
                 super(screen, mouseX, mouseY, scrollDeltaX, scrollDeltaY);
+            }
+            /** Wrapper constructor */
+            public Post(net.minecraftforge.client.event.ScreenEvent.MouseScrolled.Post forge) {
+                super(forge.getScreen(), forge.getMouseX(), forge.getMouseY(),
+                      forge.getDeltaX(), forge.getDeltaY());
             }
         }
     }
@@ -302,11 +379,19 @@ public abstract class ScreenEvent extends Event {
             public Pre(Screen screen, int keyCode, int scanCode, int modifiers) {
                 super(screen, keyCode, scanCode, modifiers);
             }
+            /** Wrapper constructor */
+            public Pre(net.minecraftforge.client.event.ScreenEvent.KeyPressed.Pre forge) {
+                super(forge.getScreen(), forge.getKeyCode(), forge.getScanCode(), forge.getModifiers());
+            }
         }
 
         public static class Post extends KeyPressed implements ICancellableEvent {
             public Post(Screen screen, int keyCode, int scanCode, int modifiers) {
                 super(screen, keyCode, scanCode, modifiers);
+            }
+            /** Wrapper constructor */
+            public Post(net.minecraftforge.client.event.ScreenEvent.KeyPressed.Post forge) {
+                super(forge.getScreen(), forge.getKeyCode(), forge.getScanCode(), forge.getModifiers());
             }
         }
     }
@@ -321,11 +406,19 @@ public abstract class ScreenEvent extends Event {
             public Pre(Screen screen, int keyCode, int scanCode, int modifiers) {
                 super(screen, keyCode, scanCode, modifiers);
             }
+            /** Wrapper constructor */
+            public Pre(net.minecraftforge.client.event.ScreenEvent.KeyReleased.Pre forge) {
+                super(forge.getScreen(), forge.getKeyCode(), forge.getScanCode(), forge.getModifiers());
+            }
         }
 
         public static class Post extends KeyReleased implements ICancellableEvent {
             public Post(Screen screen, int keyCode, int scanCode, int modifiers) {
                 super(screen, keyCode, scanCode, modifiers);
+            }
+            /** Wrapper constructor */
+            public Post(net.minecraftforge.client.event.ScreenEvent.KeyReleased.Post forge) {
+                super(forge.getScreen(), forge.getKeyCode(), forge.getScanCode(), forge.getModifiers());
             }
         }
     }
@@ -348,11 +441,19 @@ public abstract class ScreenEvent extends Event {
             public Pre(Screen screen, char codePoint, int modifiers) {
                 super(screen, codePoint, modifiers);
             }
+            /** Wrapper constructor */
+            public Pre(net.minecraftforge.client.event.ScreenEvent.CharacterTyped.Pre forge) {
+                super(forge.getScreen(), forge.getCodePoint(), forge.getModifiers());
+            }
         }
 
         public static class Post extends CharacterTyped {
             public Post(Screen screen, char codePoint, int modifiers) {
                 super(screen, codePoint, modifiers);
+            }
+            /** Wrapper constructor */
+            public Post(net.minecraftforge.client.event.ScreenEvent.CharacterTyped.Post forge) {
+                super(forge.getScreen(), forge.getCodePoint(), forge.getModifiers());
             }
         }
     }
@@ -368,6 +469,12 @@ public abstract class ScreenEvent extends Event {
             this.currentScreen = currentScreen;
             this.newScreen = screen;
         }
+        /** Wrapper constructor */
+        public Opening(net.minecraftforge.client.event.ScreenEvent.Opening forge) {
+            super(forge.getScreen());
+            this.currentScreen = forge.getCurrentScreen();
+            this.newScreen = forge.getNewScreen();
+        }
 
         @Nullable
         public Screen getCurrentScreen() { return currentScreen; }
@@ -380,6 +487,10 @@ public abstract class ScreenEvent extends Event {
     public static class Closing extends ScreenEvent {
         public Closing(Screen screen) {
             super(screen);
+        }
+        /** Wrapper constructor */
+        public Closing(net.minecraftforge.client.event.ScreenEvent.Closing forge) {
+            super(forge.getScreen());
         }
     }
 }

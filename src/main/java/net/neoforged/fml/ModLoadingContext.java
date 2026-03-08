@@ -38,8 +38,15 @@ public class ModLoadingContext {
         getActiveContainer().registerConfig(type, spec);
     }
     
-    public void registerExtensionPoint(Class<? extends IExtensionPoint> extensionPoint, java.util.function.Supplier<? extends IExtensionPoint> extension) {
-         // TODO: Implement extension point registration if needed
-         // For now, no-op or delegate if compatible
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void registerExtensionPoint(Class<? extends IExtensionPoint> extensionPoint,
+                                        java.util.function.Supplier<? extends IExtensionPoint> extension) {
+        try {
+            IExtensionPoint ext = extension.get();
+            getActiveContainer().registerExtensionPoint((Class) extensionPoint, ext);
+        } catch (Throwable e) {
+            org.slf4j.LoggerFactory.getLogger(ModLoadingContext.class).warn(
+                    "[ReForged] Failed to register extension point: {}", e.getMessage());
+        }
     }
 }

@@ -13,6 +13,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.neoforged.fml.event.IModBusEvent;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -20,11 +22,14 @@ import java.util.function.Supplier;
 /**
  * NeoForge wrapper events for entity/block-entity renderer registration.
  * Each inner class wraps the corresponding Forge event via a constructor.
+ *
+ * <p>Extends {@link net.neoforged.bus.api.Event} so NeoForge code
+ * can safely cast to {@code Event}.</p>
  */
-public class EntityRenderersEvent {
+public abstract class EntityRenderersEvent extends net.neoforged.bus.api.Event implements IModBusEvent {
 
     /** Wraps {@code net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers}. */
-    public static class RegisterRenderers {
+    public static class RegisterRenderers extends EntityRenderersEvent {
         private final net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers delegate;
 
         public RegisterRenderers(net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers delegate) {
@@ -43,7 +48,7 @@ public class EntityRenderersEvent {
     }
 
     /** Wraps {@code net.minecraftforge.client.event.EntityRenderersEvent.RegisterLayerDefinitions}. */
-    public static class RegisterLayerDefinitions {
+    public static class RegisterLayerDefinitions extends EntityRenderersEvent {
         private final net.minecraftforge.client.event.EntityRenderersEvent.RegisterLayerDefinitions delegate;
 
         public RegisterLayerDefinitions(net.minecraftforge.client.event.EntityRenderersEvent.RegisterLayerDefinitions delegate) {
@@ -67,11 +72,29 @@ public class EntityRenderersEvent {
             return delegate.getSkins();
         }
 
+        /** NeoForge API name. */
+        @Nullable
+        @SuppressWarnings("unchecked")
+        public <R extends EntityRenderer<? extends Player>> R getSkin(PlayerSkin.Model skinName) {
+            return delegate.getPlayerSkin(skinName);
+        }
+
+        /** Forge-compatible alias. */
+        @Nullable
         @SuppressWarnings("unchecked")
         public <R extends EntityRenderer<? extends Player>> R getPlayerSkin(PlayerSkin.Model skinName) {
             return delegate.getPlayerSkin(skinName);
         }
 
+        /** NeoForge API name — accepts any Entity type (NeoForge signature). */
+        @Nullable
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        public <T extends Entity, R extends EntityRenderer<T>> R getRenderer(EntityType<? extends T> entityType) {
+            return (R) delegate.getEntityRenderer((EntityType) entityType);
+        }
+
+        /** Forge-compatible alias — restricted to LivingEntity. */
+        @Nullable
         @SuppressWarnings("unchecked")
         public <T extends LivingEntity, R extends EntityRenderer<T>> R getEntityRenderer(EntityType<? extends T> entityType) {
             return delegate.getEntityRenderer(entityType);
