@@ -98,6 +98,57 @@ public class ModContainer {
      */
     @SuppressWarnings("unchecked")
     public <T extends IExtensionPoint> void registerExtensionPoint(Class<T> point, T extension) {
+        bridgeConfigScreenFactory(extension);
+    }
+
+    /**
+     * Dynamic extension point registration for cross-classloader objects.
+     * Uses reflection to detect IConfigScreenFactory when direct instanceof fails.
+     */
+    void registerExtensionPointDynamic(Class<?> point, Object extension) {
+        if (extension instanceof net.neoforged.neoforge.client.gui.IConfigScreenFactory) {
+            bridgeConfigScreenFactory(extension);
+            return;
+        }
+        // Try reflection: the object might implement IConfigScreenFactory from a different classloader
+        try {
+            java.lang.reflect.Method createScreen = null;
+            for (var iface : extension.getClass().getInterfaces()) {
+                if (iface.getName().equals("net.neoforged.neoforge.client.gui.IConfigScreenFactory")) {
+                    createScreen = iface.getMethod("createScreen",
+                            Class.forName("net.neoforged.fml.ModContainer", false, iface.getClassLoader()),
+                            net.minecraft.client.gui.screens.Screen.class);
+                    break;
+                }
+            }
+            if (createScreen != null) {
+                final java.lang.reflect.Method m = createScreen;
+                java.util.function.BiFunction<net.minecraft.client.Minecraft, net.minecraft.client.gui.screens.Screen,
+                        net.minecraft.client.gui.screens.Screen> forgeFactory =
+                        (mc, parent) -> {
+                            try {
+                                return (net.minecraft.client.gui.screens.Screen) m.invoke(extension, ModContainer.this, parent);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        };
+                var configScreen = new net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory(forgeFactory);
+                delegate.registerExtensionPoint(
+                        net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory.class,
+                        () -> configScreen);
+                org.slf4j.LoggerFactory.getLogger(ModContainer.class).info(
+                        "[ReForged] Bridged config screen factory for mod '{}' via reflection", getModId());
+                return;
+            }
+        } catch (Throwable e) {
+            org.slf4j.LoggerFactory.getLogger(ModContainer.class).debug(
+                    "[ReForged] Reflection bridge failed for mod '{}': {}", getModId(), e.getMessage());
+        }
+        org.slf4j.LoggerFactory.getLogger(ModContainer.class).debug(
+                "[ReForged] Ignoring unknown extension point for mod '{}': {}", getModId(), extension.getClass().getName());
+    }
+
+    private void bridgeConfigScreenFactory(Object extension) {
         if (extension instanceof net.neoforged.neoforge.client.gui.IConfigScreenFactory factory) {
             try {
                 java.util.function.BiFunction<net.minecraft.client.Minecraft, net.minecraft.client.gui.screens.Screen,
@@ -113,6 +164,27 @@ public class ModContainer {
                         getModId(), e.getMessage());
             }
         }
+    }
+
+    /**
+     * Get a custom extension point registered on this container.
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends IExtensionPoint> java.util.Optional<T> getCustomExtension(Class<T> point) {
+        if (point == net.neoforged.neoforge.client.gui.IConfigScreenFactory.class) {
+            try {
+                var opt = delegate.getCustomExtension(
+                        net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory.class);
+                if (opt.isPresent()) {
+                    var forgeFactory = opt.get();
+                    net.neoforged.neoforge.client.gui.IConfigScreenFactory wrapper =
+                            (container, parent) -> forgeFactory.screenFunction().apply(
+                                    net.minecraft.client.Minecraft.getInstance(), parent);
+                    return java.util.Optional.of((T) wrapper);
+                }
+            } catch (Throwable ignored) {}
+        }
+        return java.util.Optional.empty();
     }
 
     /**

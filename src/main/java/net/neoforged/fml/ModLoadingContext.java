@@ -42,8 +42,26 @@ public class ModLoadingContext {
     public void registerExtensionPoint(Class<? extends IExtensionPoint> extensionPoint,
                                         java.util.function.Supplier<? extends IExtensionPoint> extension) {
         try {
-            IExtensionPoint ext = extension.get();
-            getActiveContainer().registerExtensionPoint((Class) extensionPoint, ext);
+            Object ext = extension.get();
+            if (ext instanceof IExtensionPoint iep) {
+                getActiveContainer().registerExtensionPoint((Class) extensionPoint, iep);
+            } else {
+                // Handle classloader boundary: try reflection-based bridge for IConfigScreenFactory
+                getActiveContainer().registerExtensionPointDynamic((Class) extensionPoint, ext);
+            }
+        } catch (Throwable e) {
+            org.slf4j.LoggerFactory.getLogger(ModLoadingContext.class).warn(
+                    "[ReForged] Failed to register extension point: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Direct-value overload used by NeoForge 1.21.1+ mods.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public <T extends IExtensionPoint> void registerExtensionPoint(Class<T> extensionPoint, T extension) {
+        try {
+            getActiveContainer().registerExtensionPoint(extensionPoint, extension);
         } catch (Throwable e) {
             org.slf4j.LoggerFactory.getLogger(ModLoadingContext.class).warn(
                     "[ReForged] Failed to register extension point: {}", e.getMessage());

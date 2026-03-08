@@ -138,6 +138,12 @@ public final class NeoForgeModAnalyzer {
                 "net/neoforged/neoforge/common/util/strategy/",
                 "net/neoforged/neoforge/common/crafting/",
                 "net/neoforged/neoforge/fluids/",
+                "net/neoforged/neoforge/energy/",
+                "net/neoforged/neoforge/entity/",
+                "net/neoforged/neoforge/server/",
+                "net/neoforged/neoforge/server/permission/",
+                "net/neoforged/neoforge/server/permission/nodes/",
+                "net/neoforged/neoforge/server/permission/events/",
                 "net/neoforged/neoforge/items/",
                 "net/neoforged/neoforgespi/",
                 "net/neoforged/neoforgespi/language/"
