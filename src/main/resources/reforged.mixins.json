@@ -1,6 +1,7 @@
 {
     "required": true,
     "package": "org.xiyu.reforged.mixin",
+    "plugin": "org.xiyu.reforged.mixin.ReForgedMixinPlugin",
     "compatibilityLevel": "JAVA_21",
     "refmap": "reforged.refmap.json",
     "mixins": [
