@@ -702,7 +702,14 @@ public final class NeoForgeModLoader {
                     "org.spongepowered.",                            // Mixin
                 };
 
+                // Specific classes that must be loaded from parent to maintain type identity
+                // with classes injected via ReForged Mixins (e.g., JadeFont interface on Font)
+                private static final java.util.Set<String> PARENT_FIRST_CLASSES = java.util.Set.of(
+                    "snownee.jade.gui.JadeFont"
+                );
+
                 private boolean isParentFirst(String name) {
+                    if (PARENT_FIRST_CLASSES.contains(name)) return true;
                     for (String prefix : PARENT_FIRST_PREFIXES) {
                         if (name.startsWith(prefix)) return true;
                     }

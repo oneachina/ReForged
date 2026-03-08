@@ -28,7 +28,9 @@
         "GeometryLoaderManagerMixin",
         "ClientTooltipComponentMixin",
         "EntityRenderDispatcherMixin",
-        "GuiRenderMixin"
+        "GuiRenderMixin",
+        "FontJadePatchMixin",
+        "ScreenRenderSafetyMixin"
     ],
     "server": [],
     "injectors": {
