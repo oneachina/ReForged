@@ -4,12 +4,14 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.neoforged.bus.api.IEventBus;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -227,6 +229,66 @@ public class DeferredRegister<T> {
         RegistryBuilder<T> builder = builderSup.get();
         Registry<T> registry = builder.build();
         return () -> registry;
+    }
+
+    /**
+     * NeoForge's makeRegistry — creates a custom registry via a Consumer-based RegistryBuilder.
+     * Returns the newly created Registry.
+     * <p>
+     * Since mod-defined custom registries don't exist in Forge, calling this
+     * also switches this DeferredRegister to no-op mode.
+     * </p>
+     */
+    @SuppressWarnings("unchecked")
+    public Registry<T> makeRegistry(Consumer<RegistryBuilder<T>> consumer) {
+        LOGGER.info("[ReForged] makeRegistry(Consumer) called for mod '{}' — switching to no-op mode", modid);
+        this.isNoOp = true;
+        RegistryBuilder<T> builder = new RegistryBuilder<>(registryKey);
+        consumer.accept(builder);
+        Registry<T> registry = builder.build();
+        return registry;
+    }
+
+    /* ---------- Tag key creation ---------- */
+
+    /**
+     * Creates a tag key based on the current namespace and provided path as the location
+     * and the registry name linked to this DeferredRegister.
+     *
+     * @see #createTagKey(ResourceLocation)
+     */
+    @SuppressWarnings("unchecked")
+    public TagKey<T> createTagKey(String path) {
+        return createTagKey(ResourceLocation.fromNamespaceAndPath(this.modid, path));
+    }
+
+    /**
+     * Creates a tag key based on the provided resource location and the registry name
+     * linked to this DeferredRegister.
+     *
+     * @see #createTagKey(String)
+     */
+    @SuppressWarnings("unchecked")
+    public TagKey<T> createTagKey(ResourceLocation location) {
+        if (registryKey == null) {
+            throw new IllegalStateException("Cannot create a TagKey without a registry key");
+        }
+        return TagKey.create(registryKey, location);
+    }
+
+    /* ---------- Registry supplier ---------- */
+
+    /**
+     * Returns a supplier for the Registry linked to this DeferredRegister.
+     * For vanilla registries this returns the built-in registry; for custom registries
+     * it returns null until makeRegistry is called.
+     */
+    @SuppressWarnings("unchecked")
+    public Supplier<Registry<T>> getRegistry() {
+        return () -> {
+            if (registryKey == null) return null;
+            return (Registry<T>) net.minecraft.core.registries.BuiltInRegistries.REGISTRY.get(registryKey.location());
+        };
     }
 
     /* ---------- DataComponents specialisation ---------- */
