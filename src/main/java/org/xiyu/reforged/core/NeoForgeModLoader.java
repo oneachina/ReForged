@@ -1094,6 +1094,19 @@ public final class NeoForgeModLoader {
             return ctor.newInstance(busAdapter, container);
         } catch (NoSuchMethodException ignored) {}
 
+        // Pattern 3b: (net.neoforged.fml.ModContainer, net.neoforged.bus.api.IEventBus) — reversed order
+        try {
+            Constructor<?> ctor = modClass.getDeclaredConstructor(
+                    net.neoforged.fml.ModContainer.class,
+                    net.neoforged.bus.api.IEventBus.class);
+            ctor.setAccessible(true);
+            net.neoforged.fml.ModContainer container =
+                    new net.neoforged.fml.ModContainer(
+                            net.minecraftforge.fml.ModLoadingContext.get().getActiveContainer());
+            LOGGER.debug("[ReForged] Matched constructor pattern 3b (ModContainer, IEventBus) for {}", modClass.getName());
+            return ctor.newInstance(container, busAdapter);
+        } catch (NoSuchMethodException ignored) {}
+
         // Pattern 4: (net.neoforged.bus.api.IEventBus, net.neoforged.api.distmarker.Dist)
         try {
             Constructor<?> ctor = modClass.getDeclaredConstructor(
@@ -1157,6 +1170,17 @@ public final class NeoForgeModLoader {
                 Object container = createModContainerForClassLoader(params[1], modClass.getClassLoader());
                 LOGGER.info("[ReForged] Name-based fallback matched (IEventBus, ModContainer) for {}", modClass.getName());
                 return ctor.newInstance(adaptedBus, container);
+            }
+
+            // Name-match: (ModContainer, IEventBus) — reversed order
+            if (params.length == 2
+                    && params[0].getName().equals("net.neoforged.fml.ModContainer")
+                    && params[1].getName().equals("net.neoforged.bus.api.IEventBus")) {
+                ctor.setAccessible(true);
+                Object adaptedBus = adaptProxyForClassLoader(busAdapter, params[1], modClass.getClassLoader(), modBus);
+                Object container = createModContainerForClassLoader(params[0], modClass.getClassLoader());
+                LOGGER.info("[ReForged] Name-based fallback matched (ModContainer, IEventBus) for {}", modClass.getName());
+                return ctor.newInstance(container, adaptedBus);
             }
 
             // Name-match: (IEventBus, Dist)

@@ -20,6 +20,7 @@ var MethodNode = Java.type('org.objectweb.asm.tree.MethodNode');
 var InsnNode = Java.type('org.objectweb.asm.tree.InsnNode');
 var VarInsnNode = Java.type('org.objectweb.asm.tree.VarInsnNode');
 var MethodInsnNode = Java.type('org.objectweb.asm.tree.MethodInsnNode');
+var FieldInsnNode = Java.type('org.objectweb.asm.tree.FieldInsnNode');
 
 function initializeCoreMod() {
     return {
@@ -31,6 +32,7 @@ function initializeCoreMod() {
             'transformer': function(classNode) {
                 addNeoForgeConstructor(classNode);
                 addNeoForgeTypeIntConstructor(classNode);
+                addNeoForgeContextTypeIntConstructor(classNode);
                 ASMAPI.log('INFO', '[ReForged] Added NeoForge-typed constructor bridges to KeyMapping');
                 return classNode;
             }
@@ -181,5 +183,82 @@ function addNeoForgeTypeIntConstructor(classNode) {
 
     method.maxStack = 7;
     method.maxLocals = 7;
+    classNode.methods.add(method);
+}
+
+/**
+ * Injects a 5-arg constructor without KeyModifier:
+ *
+ * public KeyMapping(String description, neo.IKeyConflictContext ctx,
+ *                   InputConstants.Type type, int keyCode, String category) {
+ *     this(description, ctx, KeyModifier.NONE, type.getOrCreate(keyCode), category);
+ * }
+ *
+ * SpartanWeaponry's KeyBinds calls this form.
+ */
+function addNeoForgeContextTypeIntConstructor(classNode) {
+    var desc = '('
+        + 'Ljava/lang/String;'
+        + 'Lnet/neoforged/neoforge/client/settings/IKeyConflictContext;'
+        + 'Lcom/mojang/blaze3d/platform/InputConstants$Type;'
+        + 'I'
+        + 'Ljava/lang/String;'
+        + ')V';
+
+    // Delegate to Forge's 5-arg: (String, forge.IKeyConflictContext, forge.KeyModifier, InputConstants.Key, String)
+    var forgeDesc = '('
+        + 'Ljava/lang/String;'
+        + 'Lnet/minecraftforge/client/settings/IKeyConflictContext;'
+        + 'Lnet/minecraftforge/client/settings/KeyModifier;'
+        + 'Lcom/mojang/blaze3d/platform/InputConstants$Key;'
+        + 'Ljava/lang/String;'
+        + ')V';
+
+    var method = new MethodNode(
+        Opcodes.ACC_PUBLIC,
+        '<init>',
+        desc,
+        null, null
+    );
+
+    // this
+    method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+    // description (String)
+    method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 1));
+    // keyConflictContext: NeoForge IKeyConflictContext extends Forge IKeyConflictContext
+    method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 2));
+    // KeyModifier.NONE (Forge)
+    method.instructions.add(new FieldInsnNode(
+        Opcodes.GETSTATIC,
+        'net/minecraftforge/client/settings/KeyModifier',
+        'NONE',
+        'Lnet/minecraftforge/client/settings/KeyModifier;'
+    ));
+    // Convert InputConstants.Type + int -> InputConstants.Key
+    method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 3));   // type
+    method.instructions.add(new VarInsnNode(Opcodes.ILOAD, 4));   // keyCode (int)
+    method.instructions.add(new MethodInsnNode(
+        Opcodes.INVOKEVIRTUAL,
+        'com/mojang/blaze3d/platform/InputConstants$Type',
+        'getOrCreate',
+        '(I)Lcom/mojang/blaze3d/platform/InputConstants$Key;',
+        false
+    ));
+    // category (String) — slot 5
+    method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 5));
+
+    // Delegate to Forge's 5-arg constructor
+    method.instructions.add(new MethodInsnNode(
+        Opcodes.INVOKESPECIAL,
+        'net/minecraft/client/KeyMapping',
+        '<init>',
+        forgeDesc,
+        false
+    ));
+
+    method.instructions.add(new InsnNode(Opcodes.RETURN));
+
+    method.maxStack = 7;
+    method.maxLocals = 6;
     classNode.methods.add(method);
 }
