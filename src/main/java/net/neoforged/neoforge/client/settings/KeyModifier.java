@@ -17,4 +17,11 @@ public enum KeyModifier {
     public net.minecraftforge.client.settings.KeyModifier toForge() {
         return net.minecraftforge.client.settings.KeyModifier.valueOf(name());
     }
+
+    /**
+     * Convert a Forge KeyModifier to the corresponding NeoForge KeyModifier.
+     */
+    public static KeyModifier fromForge(net.minecraftforge.client.settings.KeyModifier forgeModifier) {
+        return KeyModifier.valueOf(forgeModifier.name());
+    }
 }

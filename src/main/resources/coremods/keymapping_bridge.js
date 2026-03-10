@@ -33,7 +33,9 @@ function initializeCoreMod() {
                 addNeoForgeConstructor(classNode);
                 addNeoForgeTypeIntConstructor(classNode);
                 addNeoForgeContextTypeIntConstructor(classNode);
-                ASMAPI.log('INFO', '[ReForged] Added NeoForge-typed constructor bridges to KeyMapping');
+                addGetKeyModifierBridge(classNode);
+                addGetDefaultKeyModifierBridge(classNode);
+                ASMAPI.log('INFO', '[ReForged] Added NeoForge-typed constructor + getter bridges to KeyMapping');
                 return classNode;
             }
         }
@@ -260,5 +262,93 @@ function addNeoForgeContextTypeIntConstructor(classNode) {
 
     method.maxStack = 7;
     method.maxLocals = 6;
+    classNode.methods.add(method);
+}
+
+/**
+ * Injects a bridge method:
+ *
+ * public net.neoforged.neoforge.client.settings.KeyModifier getKeyModifier() {
+ *     return NeoForgeKeyModifier.fromForge(this.getKeyModifier()); // calls Forge's version
+ * }
+ *
+ * Forge's KeyMapping already has getKeyModifier() returning Forge KeyModifier.
+ * NeoForge mods call getKeyModifier() expecting NeoForge KeyModifier.
+ * At bytecode level these are distinct methods (different return type descriptors).
+ */
+function addGetKeyModifierBridge(classNode) {
+    var neoDesc = '()Lnet/neoforged/neoforge/client/settings/KeyModifier;';
+    var forgeDesc = '()Lnet/minecraftforge/client/settings/KeyModifier;';
+
+    var method = new MethodNode(
+        Opcodes.ACC_PUBLIC,
+        'getKeyModifier',
+        neoDesc,
+        null, null
+    );
+
+    // this.getKeyModifier() — calls the Forge version (different return type descriptor)
+    method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+    method.instructions.add(new MethodInsnNode(
+        Opcodes.INVOKEVIRTUAL,
+        'net/minecraft/client/KeyMapping',
+        'getKeyModifier',
+        forgeDesc,
+        false
+    ));
+    // Convert: NeoForgeKeyModifier.fromForge(forgeModifier)
+    method.instructions.add(new MethodInsnNode(
+        Opcodes.INVOKESTATIC,
+        'net/neoforged/neoforge/client/settings/KeyModifier',
+        'fromForge',
+        '(Lnet/minecraftforge/client/settings/KeyModifier;)Lnet/neoforged/neoforge/client/settings/KeyModifier;',
+        false
+    ));
+    method.instructions.add(new InsnNode(Opcodes.ARETURN));
+
+    method.maxStack = 2;
+    method.maxLocals = 1;
+    classNode.methods.add(method);
+}
+
+/**
+ * Injects a bridge method:
+ *
+ * public net.neoforged.neoforge.client.settings.KeyModifier getDefaultKeyModifier() {
+ *     return NeoForgeKeyModifier.fromForge(this.getDefaultKeyModifier()); // calls Forge's version
+ * }
+ */
+function addGetDefaultKeyModifierBridge(classNode) {
+    var neoDesc = '()Lnet/neoforged/neoforge/client/settings/KeyModifier;';
+    var forgeDesc = '()Lnet/minecraftforge/client/settings/KeyModifier;';
+
+    var method = new MethodNode(
+        Opcodes.ACC_PUBLIC,
+        'getDefaultKeyModifier',
+        neoDesc,
+        null, null
+    );
+
+    // this.getDefaultKeyModifier() — calls the Forge version
+    method.instructions.add(new VarInsnNode(Opcodes.ALOAD, 0));
+    method.instructions.add(new MethodInsnNode(
+        Opcodes.INVOKEVIRTUAL,
+        'net/minecraft/client/KeyMapping',
+        'getDefaultKeyModifier',
+        forgeDesc,
+        false
+    ));
+    // Convert: NeoForgeKeyModifier.fromForge(forgeModifier)
+    method.instructions.add(new MethodInsnNode(
+        Opcodes.INVOKESTATIC,
+        'net/neoforged/neoforge/client/settings/KeyModifier',
+        'fromForge',
+        '(Lnet/minecraftforge/client/settings/KeyModifier;)Lnet/neoforged/neoforge/client/settings/KeyModifier;',
+        false
+    ));
+    method.instructions.add(new InsnNode(Opcodes.ARETURN));
+
+    method.maxStack = 2;
+    method.maxLocals = 1;
     classNode.methods.add(method);
 }

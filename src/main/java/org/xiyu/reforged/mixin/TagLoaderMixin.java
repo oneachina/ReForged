@@ -6,10 +6,10 @@ import net.minecraft.tags.TagLoader;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,23 +28,25 @@ public class TagLoaderMixin {
     private static final Logger REFORGED_LOGGER = LogUtils.getLogger();
 
     /**
-     * Modify the tag map parameter passed to build() to include cross-namespace aliases.
+     * Inject at the HEAD of build() to add cross-namespace aliases directly into the
+     * mutable tag map before it is processed.
+     *
      * For every tag in "c:" namespace, copy its entries into the corresponding "forge:" tag
      * and vice versa.
      */
-    @ModifyVariable(method = "build(Ljava/util/Map;)Ljava/util/Map;", at = @At("HEAD"), argsOnly = true, remap = false)
-    private Map<ResourceLocation, List<TagLoader.EntryWithSource>> reforged$aliasConventionTags(
-            Map<ResourceLocation, List<TagLoader.EntryWithSource>> tagMap) {
+    @Inject(method = "build(Ljava/util/Map;)Ljava/util/Map;", at = @At("HEAD"), remap = false)
+    private void reforged$aliasConventionTags(
+            Map<ResourceLocation, List<TagLoader.EntryWithSource>> tagMap,
+            CallbackInfoReturnable<Map<ResourceLocation, ?>> cir) {
 
-        // Work on a mutable copy
-        Map<ResourceLocation, List<TagLoader.EntryWithSource>> mutable = new HashMap<>(tagMap);
+        REFORGED_LOGGER.info("[ReForged] TagLoaderMixin.build() intercepted, processing {} tags", tagMap.size());
+
         int aliased = 0;
 
-        // Collect all keys first to avoid ConcurrentModificationException
-        List<Map.Entry<ResourceLocation, List<TagLoader.EntryWithSource>>> entries =
-                new ArrayList<>(mutable.entrySet());
+        // Collect entries to add (avoid ConcurrentModificationException)
+        Map<ResourceLocation, List<TagLoader.EntryWithSource>> additions = new java.util.HashMap<>();
 
-        for (Map.Entry<ResourceLocation, List<TagLoader.EntryWithSource>> entry : entries) {
+        for (Map.Entry<ResourceLocation, List<TagLoader.EntryWithSource>> entry : tagMap.entrySet()) {
             ResourceLocation key = entry.getKey();
             List<TagLoader.EntryWithSource> sources = entry.getValue();
             if (sources == null || sources.isEmpty()) continue;
@@ -60,10 +62,14 @@ public class TagLoaderMixin {
             }
 
             if (alias != null) {
-                List<TagLoader.EntryWithSource> existing = mutable.get(alias);
+                List<TagLoader.EntryWithSource> existing = tagMap.get(alias);
+                if (existing == null) {
+                    existing = additions.get(alias);
+                }
+
                 if (existing == null) {
                     // Alias doesn't exist yet — create it with all entries from the source
-                    mutable.put(alias, new ArrayList<>(sources));
+                    additions.put(alias, new ArrayList<>(sources));
                     aliased++;
                 } else {
                     // Alias exists — merge entries that aren't already present
@@ -73,16 +79,21 @@ public class TagLoaderMixin {
                             merged.add(src);
                         }
                     }
-                    mutable.put(alias, merged);
+                    additions.put(alias, merged);
                     aliased++;
                 }
             }
         }
 
-        if (aliased > 0) {
-            REFORGED_LOGGER.debug("[ReForged] Aliased {} convention tags between c: and forge: namespaces", aliased);
+        // Apply all additions into the original map (it should be mutable at this point)
+        if (!additions.isEmpty()) {
+            try {
+                tagMap.putAll(additions);
+                REFORGED_LOGGER.info("[ReForged] Aliased {} convention tags between c: and forge: namespaces", aliased);
+            } catch (UnsupportedOperationException e) {
+                // Map is immutable — can't modify in place, this shouldn't happen with TagLoader
+                REFORGED_LOGGER.error("[ReForged] Tag map is immutable, cannot add aliases! Map type: {}", tagMap.getClass().getName());
+            }
         }
-
-        return mutable;
     }
 }
