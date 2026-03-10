@@ -174,30 +174,36 @@ Latest implementation snapshot, approximate as of 2026-03-10.
 | Subsystem | Weight | Completion | Weighted Score |
 |-----------|--------|------------|----------------|
 | Mod loading pipeline | 20% | 78% | 15.6 |
-| Event system | 20% | 80% | 16.0 |
+| Event system | 20% | 92% | 18.4 |
 | Registry system | 15% | 88% | 13.2 |
 | Capability system | 10% | 88% | 8.8 |
 | Network / Payload | 8% | 80% | 6.4 |
-| Extension / Common API | 12% | 85% | 10.2 |
-| Client side | 10% | 75% | 7.5 |
+| Extension / Common API | 12% | 88% | 10.56 |
+| Client side | 10% | 85% | 8.5 |
 | Mixin coverage | 5% | 55% | 2.75 |
-| **Total** | **100%** |  | **80.5%** |
+| **Total** | **100%** |  | **84.2%** |
 
 ### Recent Changes (since 03-09)
 
-- **Registry system**: Implemented full DataMap system (`DataMapStorage`, `IRegistryExtension.getDataMap()`, `IWithData.getData()`); `DeferredHolder.is(TagKey)` / `tags()` now resolve via `BuiltInRegistries`; all 4 HolderSetType codecs (ANY/AND/OR/NOT) fully implemented with proper `makeCodec()` / `makeStreamCodec()`.
-- **Network / Payload**: `ClientPayloadContext.reply()` & `ServerPayloadContext.reply()` now delegate properly to `PayloadChannelRegistry.sendViaConnection()`.
-- **Extension / Common API**: `CommonHooks.getTagFromVanillaTier()` maps all 6 vanilla Tiers to `BlockTags.INCORRECT_FOR_*`; `FarmlandWaterManager` delegates to Forge; `IBlockEntityExtension.getPersistentData()` provides per-instance caching; `IHolderLookupProviderExtension.lookup()` delegates to the provider; `CompositeHolderSet` now implements `ICustomHolderSet` with `homogenize()` support.
-- **Client side**: `CompositeRenderable.render()` and `BakedModelRenderable.render()` fully implemented with transform matrices and `putBulkData()` rendering.
-- **Capability system**: Improved `AttachmentBridge` data delegation paths.
-- **Permission**: `PermissionAPI.getRegisteredNodes()` now backed by a real registry populated via `PermissionGatherEvent`.
+- **Event system (major)**: Added **60 Forge wrapper constructors** enabling automatic event bridging via `NeoForgeEventBusAdapter`. Covers server lifecycle, entity, living, player, level, village, brewing, enchanting, and grindstone events.
+- **ClientHooks**: Expanded from 18 → **108 methods** with full `ForgeHooksClient` delegation (GUI layers, armor/entity rendering, input events, tooltips, model baking, fog/viewport, sound, screenshots, and more).
+- **EventHooks**: Added ~13 missing methods (`onFarmlandTrample`, `fireFluidPlaceBlockEvent`, `onAlterGround`, `firePlayerRespawnEvent`, `canEntityGrief`, `onEntitySize`, etc.).
+- **CommonHooks**: Added ~14 missing methods (`onLivingConvert`, `onEntityDestroyBlock`, `onPlayerAttack`, `canLivingConvert`, `getEntitySizeForPos`, etc.).
+- **Client event wrappers (~20)**: `RenderPlayerEvent`, `RenderNameTagEvent`, `ClientChatReceivedEvent`, `ClientPauseChangeEvent`, `TextureAtlasStitchedEvent`, `ModelEvent`, `PlaySoundEvent`, `RenderHighlightEvent`, `ScreenEvent`, `ViewportEvent`, and more.
+- **Common event wrappers (~40)**: Server lifecycle events, `EntityLeaveLevel/Mount/MobGriefing`, `LivingDrops/EquipmentChange/AnimalTame`, `LivingEntityUseItem` (4 subs), `AttackEntity/AnvilRepair/ItemFished/CriticalHit`, `AdvancementEvent` (2 subs), `PlayerXpEvent` (3 subs), `ChunkEvent/ChunkWatch/ChunkData`, `CropGrowEvent`, `GrindstoneEvent`, and more.
+- **FMLConstructModEvent**: New lifecycle event wrapper for mod construction phase.
+- **Registry system**: Implemented full DataMap system (`DataMapStorage`, `IRegistryExtension.getDataMap()`, `IWithData.getData()`); `DeferredHolder.is(TagKey)` / `tags()` now resolve via `BuiltInRegistries`; all 4 HolderSetType codecs (ANY/AND/OR/NOT) fully implemented.
+- **Network / Payload**: `ClientPayloadContext.reply()` & `ServerPayloadContext.reply()` now delegate properly.
+- **Extension / Common API**: `CommonHooks.getTagFromVanillaTier()` maps all 6 vanilla Tiers; `FarmlandWaterManager` delegates to Forge; `IBlockEntityExtension.getPersistentData()` per-instance caching; `CompositeHolderSet` with `homogenize()` support.
+- **Client side**: `CompositeRenderable.render()` and `BakedModelRenderable.render()` fully implemented.
+- **Permission**: `PermissionAPI.getRegisteredNodes()` backed by real registry via `PermissionGatherEvent`.
 
 ### Notes
 
 - The percentages above are engineering estimates, not formal test pass rates.
-- 765 Java source files total (685 shim + 80 core), 40 Mixin patches.
+- 766 Java source files total (686 shim + 80 core), 40 Mixin patches, 60 event wrapper constructors.
 - Only 4 `UnsupportedOperationException` remain — all intentional by design (e.g. `PartEntity.getAddEntityPacket()`, `ClientCommandSourceStack.getServer()`).
-- The biggest remaining gaps are deeper client rendering/model bake hooks, advanced entity sync, and NeoForge-only vanilla patch behavior.
+- The biggest remaining gaps are deeper client rendering/model bake hooks, advanced entity sync, core Mixins (MinecraftMixin, GameRendererMixin), and NeoForge-only vanilla patch behavior.
 
 ## 📝 Project Structure
 
