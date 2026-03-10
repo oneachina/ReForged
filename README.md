@@ -143,6 +143,30 @@ ReForged aims to provide broad compatibility with NeoForge mods, but some limita
 - ⚠️ Some advanced NeoForge-exclusive features may not be available
 - ⚠️ Mods with deep NeoForge integration may require additional patches
 
+### 🎯 Mod Scale & Type Compatibility Guide
+
+The table below outlines the expected compatibility for different types and scales of NeoForge mods on ReForged.
+
+| Mod Type | Typical Examples | Expected Compat | Notes |
+|----------|-----------------|-----------------|-------|
+| **Item / Block mods** | New ores, decorations, tools & weapons | ✅ Excellent | `DeferredRegister`, CreativeTabs, item properties, food components are fully bridged |
+| **Worldgen mods** | Custom ore veins, structures, biome modifiers | ✅ Good | `BiomeModifier`/`StructureModifier` framework implemented; datapack-driven generation works |
+| **Recipe / Crafting extensions** | Custom recipe types, conditional recipes | ✅ Good | `ICondition` system and custom `RecipeSerializer` available |
+| **Capability / Attachment mods** | Energy, fluid, item storage | ✅ Good | `IEnergyStorage`/`IFluidHandler`/`IItemHandler` fully implemented; `AttachmentType` bridges to Forge Capability |
+| **Network / Payload mods** | Custom payload communication | ✅ Good | `PayloadRegistrar` registration and bidirectional `reply()` implemented |
+| **Client rendering mods** | Custom models, particles, HUD overlays | ⚠️ Partial | Basic model loading (OBJ/JSON), `RenderType` registration, GUI events available; deep BakedModel transforms and custom shaders may need adaptation |
+| **Info / Tooltip mods** | Jade, WTHIT, JEI plugins | ⚠️ Partial | Depends on how deeply the mod relies on NeoForge extension interfaces; Jade has a dedicated Mixin patch |
+| **Large content mods** | Mekanism, Create, etc. | ⚠️ Limited | These mods typically rely heavily on NeoForge-specific capability lookups, rendering pipelines, and multiblock sync — some features may be missing or require extra patches |
+| **Core / Low-level mods** | Custom ModLoader extensions, ServiceLoader overrides | ❌ Unsupported | Mods that manipulate FML internals or NeoForge bootstrap stages cannot be shimmed |
+
+**Scale Reference:**
+
+- **Small mods** (< 50 classes): Only use `DeferredRegister`, event listeners, simple Capabilities → **most will run out of the box**.
+- **Medium mods** (50–300 classes): Include custom networking, client rendering, datagen, conditional recipes → **core features mostly work**, some advanced features may need adaptation.
+- **Large mods** (300+ classes): Deep use of DataMaps, custom HolderSets, multiblock entity sync, complex render pipelines → **case-by-case evaluation needed**, some functionality may be missing.
+
+> **Rule of thumb:** If a NeoForge mod's core functionality only relies on the registry system + event bus + basic Capabilities (item/energy/fluid), it will most likely work on ReForged. The heavier a mod's reliance on NeoForge-exclusive deep vanilla patches, the higher the compatibility risk.
+
 ## 📊 Current Progress Snapshot
 
 Latest implementation snapshot, approximate as of 2026-03-10.
