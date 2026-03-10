@@ -57,8 +57,16 @@ public interface IItemStackExtension extends IForgeItemStack {
         }
 
         int burnTime = self().getItem().getBurnTime(self(), recipeType);
-        if (burnTime < 0) {
+        // Forge's IForgeItem.getBurnTime returns -1 to mean "use vanilla defaults".
+        // NeoForge's convention is 0 = not a fuel, positive = burn time.
+        // We must NOT throw on -1 — instead, pass it through so Forge's caller
+        // (ForgeHooks.getBurnTime) does the vanilla lookup correctly.
+        if (burnTime < -1) {
             throw new IllegalStateException("Negative burn time for stack " + self());
+        }
+        if (burnTime == -1) {
+            // Return -1 as-is — Forge's ForgeHooks.getBurnTime will map it to the vanilla value
+            return -1;
         }
         return EventHooks.getItemBurnTime(self(), burnTime, recipeType);
     }
